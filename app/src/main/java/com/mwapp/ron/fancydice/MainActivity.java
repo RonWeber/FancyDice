@@ -1,4 +1,4 @@
-package com.example.ron.fancydice;
+package com.mwapp.ron.fancydice;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -16,10 +16,12 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mwapp.ron.fancydice.R;
+
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
-    private Random rng = new Random();
+    private final Random rng = new Random();
     private int numDice = 1;
     private TextView[] diceResults;
     private static final int DICE_PER_ROW = 4;
@@ -43,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         changeNumberOfDice();
     }
 
-    public void changeNumberOfDice() {
+    private void changeNumberOfDice() {
         ((TextView) findViewById(R.id.numDice)).setText(String.valueOf(numDice));
         TableLayout individualDiceTable = (TableLayout) findViewById(R.id.individualDice);
         individualDiceTable.removeAllViews();

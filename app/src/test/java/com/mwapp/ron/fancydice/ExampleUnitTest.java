@@ -1,4 +1,4 @@
-package com.example.ron.fancydice;
+package com.mwapp.ron.fancydice;
 
 import org.junit.Test;
 
