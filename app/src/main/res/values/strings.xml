@@ -17,4 +17,6 @@
     <string name="rightArrow"><![CDATA[>]]></string>
     <string name="leftArrow"><![CDATA[<]]></string>
     <string name="cutomSidesMinimumToast">Dice have at least one side.</string>
+    <string name="tooManyDropped">Too many dice are dropped.  Resetting drop settings.</string>
+    <string name="strikethrough">Strikethrough</string>
 </resources>

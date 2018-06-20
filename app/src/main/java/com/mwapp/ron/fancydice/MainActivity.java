@@ -1,28 +1,31 @@
 package com.mwapp.ron.fancydice;
 
+import android.graphics.Paint;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.mwapp.ron.fancydice.R;
-
+import java.util.Arrays;
 import java.util.Random;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements DropSettings.DropSettingsListener {
     private final Random rng = new Random();
     private int numDice = 1;
+    private int dropLow = 0;
+    private int dropHigh = 0;
     private TextView[] diceResults;
     private static final int DICE_PER_ROW = 4;
 
@@ -30,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         findViewById(R.id.d4).setTag(4);
@@ -40,22 +43,58 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.d12).setTag(12);
         findViewById(R.id.d20).setTag(20);
         findViewById(R.id.d100).setTag(100);
-        if (savedInstanceState != null)
+        if (savedInstanceState != null) {
             numDice = savedInstanceState.getInt("numDice", 1);
+            dropHigh = savedInstanceState.getInt("dropHigh", 0);
+            dropLow = savedInstanceState.getInt("dropLow", 0);
+        }
         changeNumberOfDice();
     }
 
+    private void annoyWithToast(String message) {
+        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+    }
+
+    private void annoyWithToast(int messageId) {
+        Toast.makeText(getApplicationContext(), messageId, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void acceptNewDropSettings(int dropLow, int dropHigh) {
+        if (dropLow + dropHigh == numDice) {
+            annoyWithToast("Cannot drop all the dice.");
+            return;
+        } else if (dropLow + dropHigh > numDice) {
+            annoyWithToast("Cannot drop more dice than are being rolled.");
+            return;
+        }
+        this.dropLow = dropLow;
+        this.dropHigh = dropHigh;
+    }
+
+    private void sanityCheckDrop() {
+        if (dropHigh == 0 && dropLow >= numDice) //We're dropping too many lowest and no highest.  Drop fewer low dice.
+            dropLow = numDice - 1;
+        if (dropLow == 0 && dropHigh >= numDice) //We're dropping too many highest and no lowest.  Drop fewer high dice.
+            dropHigh = numDice - 1;
+        if ((dropHigh + dropLow) >= numDice) { //Well, this is a real kettle of fish.  Time to give up.
+            dropLow = dropHigh = 0;
+            annoyWithToast(R.string.tooManyDropped);
+        }
+    }
+
     private void changeNumberOfDice() {
+        sanityCheckDrop();
         ((TextView) findViewById(R.id.numDice)).setText(String.valueOf(numDice));
-        TableLayout individualDiceTable = (TableLayout) findViewById(R.id.individualDice);
+        TableLayout individualDiceTable = findViewById(R.id.individualDice);
         individualDiceTable.removeAllViews();
         if (numDice == 1) {
-            ((Button) findViewById(R.id.decrementButton)).setEnabled(false);
-            ((TextView) findViewById(R.id.totalText)).setVisibility(View.INVISIBLE);
+            findViewById(R.id.decrementButton).setEnabled(false);
+            findViewById(R.id.totalText).setVisibility(View.INVISIBLE);
             individualDiceTable.setVisibility(View.GONE);
         } else {
-            ((Button) findViewById(R.id.decrementButton)).setEnabled(true);
-            ((TextView) findViewById(R.id.totalText)).setVisibility(View.VISIBLE);
+            findViewById(R.id.decrementButton).setEnabled(true);
+            findViewById(R.id.totalText).setVisibility(View.VISIBLE);
             individualDiceTable.setVisibility(View.VISIBLE);
         }
         diceResults = new TextView[numDice];
@@ -87,8 +126,49 @@ public class MainActivity extends AppCompatActivity {
             total += singleResult;
             diceResults[i].setText(String.valueOf(singleResult));
         }
-        TextView totalText = (TextView) findViewById(R.id.result);
+        total -= dropDice(rollResults);
+        TextView totalText = findViewById(R.id.result);
         totalText.setText(String.valueOf(total));
+    }
+
+    /**
+     * Drops the highest and lowest dice, and changes the textviews to match.
+     * @param rollResults The dice results.  Should match in number the diceResults array.
+     * @return The number by which the total should be lowered due to drops.
+     */
+    private int dropDice(int[] rollResults) {
+        int[] sortedRollResults = rollResults.clone();
+        Arrays.sort(sortedRollResults);
+        for (TextView singleResult : diceResults) { //Disable all existing strikethrough.
+            singleResult.setTag(R.string.strikethrough, false);
+            singleResult.setPaintFlags(singleResult.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+        }
+        int totalToDrop = 0;
+        for (int i = 0; i < dropLow; i++) { //Drop the lowest
+            totalToDrop += sortedRollResults[i];
+            strikeThroughDie(sortedRollResults[i]);
+        }
+        for (int i = 0; i < dropHigh; i++) {
+            int indexToRemove = sortedRollResults.length - 1 - i;
+            totalToDrop += sortedRollResults[indexToRemove];
+            strikeThroughDie(sortedRollResults[indexToRemove]);
+        }
+        return totalToDrop;
+    }
+
+    /**
+     * Strikes though a TextView holding a result of exactly value.
+     * @param value The value to strike through.
+     */
+    private void strikeThroughDie(int value) {
+        for(TextView singleResult : diceResults) {
+            if (singleResult.getText().equals(String.valueOf(value)) && !(boolean)singleResult.getTag(R.string.strikethrough)) { //It's the right number, and not struckthough yet.
+                singleResult.setTag(R.string.strikethrough, true);
+                singleResult.setPaintFlags(singleResult.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                return;
+            }
+        }
+        Log.e("FancyDice", "Couldn't strike though a die with value " + value);
     }
 
     private void startRolling(int sides) {
@@ -100,18 +180,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void customDiceButtonClicked(View v) {
-        EditText sidesAmount = (EditText) findViewById(R.id.sidesAmount);
+        EditText sidesAmount = findViewById(R.id.sidesAmount);
         int customSides;
         if (sidesAmount.getText().toString().equals("")) {
-            Toast.makeText(getApplicationContext(), R.string.customSidesToast, Toast.LENGTH_SHORT).show();
+            annoyWithToast(R.string.customSidesToast);
             return;
         }
         customSides = Integer.parseInt(sidesAmount.getText().toString());
         if (customSides < 1) {
-            Toast.makeText(getApplicationContext(), R.string.cutomSidesMinimumToast, Toast.LENGTH_SHORT).show();
+            annoyWithToast(R.string.cutomSidesMinimumToast);
             return;
         }
         startRolling(customSides);
+    }
+
+    public void roll20DiceButtonClicked(View v) {
+        annoyWithToast("Not implemented.");
+    }
+
+    public void dropButtonClicked(View v) {
+        FragmentManager fm = getSupportFragmentManager();
+        DropSettings dropDialog = DropSettings.newInstance("Drop Dice?", dropLow, dropHigh);
+        dropDialog.show(fm, "fragment_drop_dice");
     }
 
     public void decrementNumDice(View v) {
@@ -150,7 +240,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putInt("numDice", 1);
+        outState.putInt("numDice", numDice);
+        outState.putInt("dropHigh", dropHigh);
+        outState.putInt("dropLow", dropLow);
     }
 
     private class DiceRollAnimation extends AsyncTask<Integer, Integer, Integer> {

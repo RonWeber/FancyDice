@@ -80,6 +80,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:orientation="horizontal">
 
                     <EditText
@@ -98,7 +99,47 @@
                         android:layout_weight="1"
                         android:onClick="customDiceButtonClicked"
                         android:text="@string/ok" />
+
                 </LinearLayout>
+
+                <Space
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:layout_weight="1" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
+
+                    <EditText
+                        android:id="@+id/roll20text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ems="10"
+                        android:hint="4d6"
+                        android:inputType="textPersonName" />
+
+                    <Button
+                        android:id="@+id/roll20ok"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:onClick="roll20DiceButtonClicked"
+                        android:text="@string/ok" />
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/dropButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:onClick="dropButtonClicked"
+                    android:text="Drop High/Low..." />
+
             </LinearLayout>
         </ScrollView>
 
@@ -177,32 +218,39 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
-                android:orientation="horizontal">
+                android:orientation="vertical">
 
-                <Button
-                    android:id="@+id/decrementButton"
-                    android:layout_width="32dip"
-                    android:layout_height="36dip"
-                    android:layout_weight="1"
-                    android:onClick="decrementNumDice"
-                    android:text="@string/leftArrow" />
-
-                <TextView
-                    android:id="@+id/numDice"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="1"
-                    android:textAlignment="center"
-                    android:textColor="?attr/colorPrimary" />
+                    android:layout_weight="0"
+                    android:orientation="horizontal">
 
-                <Button
-                    android:id="@+id/incrementButton"
-                    android:layout_width="32dip"
-                    android:layout_height="36dip"
-                    android:layout_weight="1"
-                    android:onClick="incrementNumDice"
-                    android:text="@string/rightArrow" />
+                    <Button
+                        android:id="@+id/decrementButton"
+                        android:layout_width="32dip"
+                        android:layout_height="36dip"
+                        android:layout_weight="1"
+                        android:onClick="decrementNumDice"
+                        android:text="@string/leftArrow" />
+
+                    <TextView
+                        android:id="@+id/numDice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="1"
+                        android:textAlignment="center"
+                        android:textColor="?attr/colorPrimary" />
+
+                    <Button
+                        android:id="@+id/incrementButton"
+                        android:layout_width="32dip"
+                        android:layout_height="36dip"
+                        android:layout_weight="1"
+                        android:onClick="incrementNumDice"
+                        android:text="@string/rightArrow" />
+                </LinearLayout>
             </LinearLayout>
 
         </LinearLayout>
