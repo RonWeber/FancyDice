@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements DropSettings.Drop
         }
     }
 
-    private void roll(int sides) {
+    private void roll(int sides, int modifier) {
         int[] rollResults = new int[numDice];
         int total = 0;
         for (int i = 0; i < numDice; i++) {
@@ -127,6 +127,7 @@ public class MainActivity extends AppCompatActivity implements DropSettings.Drop
             diceResults[i].setText(String.valueOf(singleResult));
         }
         total -= dropDice(rollResults);
+        total += modifier;
         TextView totalText = findViewById(R.id.result);
         totalText.setText(String.valueOf(total));
     }
@@ -171,12 +172,12 @@ public class MainActivity extends AppCompatActivity implements DropSettings.Drop
         Log.e("FancyDice", "Couldn't strike though a die with value " + value);
     }
 
-    private void startRolling(int sides) {
-        new DiceRollAnimation(sides).execute();
+    private void startRolling(int sides, int modifier) {
+        new DiceRollAnimation(sides, modifier).execute();
     }
 
     public void rollButtonClicked(View v) {
-        startRolling((Integer)v.getTag());
+        startRolling((Integer)v.getTag(), 0);
     }
 
     public void customDiceButtonClicked(View v) {
@@ -186,16 +187,43 @@ public class MainActivity extends AppCompatActivity implements DropSettings.Drop
             annoyWithToast(R.string.customSidesToast);
             return;
         }
-        customSides = Integer.parseInt(sidesAmount.getText().toString());
+        try {
+            customSides = Integer.parseInt(sidesAmount.getText().toString());
+        }
+        catch (NumberFormatException e) {
+            annoyWithToast("Please enter a reasonable number of sides.");
+            return;
+        }
         if (customSides < 1) {
             annoyWithToast(R.string.cutomSidesMinimumToast);
             return;
         }
-        startRolling(customSides);
+        startRolling(customSides, 0);
     }
 
     public void roll20DiceButtonClicked(View v) {
-        annoyWithToast("Not implemented.");
+        EditText roll20text = findViewById(R.id.roll20text);
+        Roll20NotationString r2ns;
+        try {
+            r2ns = new Roll20NotationString(roll20text.getText().toString());
+        } catch (Exception e) {
+            annoyWithToast("Format custom dice as \"4d6 + 1\"");
+            return;
+        }
+        if (this.numDice > 0) {
+            this.numDice = r2ns.getNumDice();
+        } else {
+            this.numDice = 1;
+        }
+        changeNumberOfDice();
+        if (r2ns.dropWasSpecified()) {
+            this.dropHigh = r2ns.getDropHigh();
+            this.dropLow = r2ns.getDropLow();
+        }
+        sanityCheckDrop();
+        startRolling(r2ns.getNumSides(), r2ns.getModifier());
+
+
     }
 
     public void dropButtonClicked(View v) {
@@ -247,11 +275,13 @@ public class MainActivity extends AppCompatActivity implements DropSettings.Drop
 
     private class DiceRollAnimation extends AsyncTask<Integer, Integer, Integer> {
         private int sides;
+        private int modifier;
         static final int TIME_BETWEEN_FLASHES_MS = 20;
         static final int NUM_FAKE_FLASHES = 4;
 
-        private DiceRollAnimation(int sides) { //When we add number of dice, etc., they will go in this constructor as well
+        private DiceRollAnimation(int sides, int modifier) {
             this.sides = sides;
+            this.modifier = modifier;
         }
 
 
@@ -267,12 +297,12 @@ public class MainActivity extends AppCompatActivity implements DropSettings.Drop
 
         @Override
         protected void onPostExecute(Integer integers) {
-            MainActivity.this.roll(sides);
+            MainActivity.this.roll(sides, modifier);
         }
 
         @Override
         protected void onProgressUpdate(Integer... integers) {
-            MainActivity.this.roll(sides);
+            MainActivity.this.roll(sides, modifier);
         }
     }
 }
